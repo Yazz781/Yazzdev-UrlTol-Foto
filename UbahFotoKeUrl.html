@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foto To Url</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ====================================== */
+        /* VARIABEL TEMA GELAP (DARK MODE DEFAULT) */
+        /* ====================================== */
+        :root {
+            --color-primary: #8ab4f8; 
+            --color-secondary: #69d48b; 
+            --color-error: #ff7575;
+            
+            --color-text: #e0e0e0; 
+            --color-background: #1e1e1e; 
+            --color-card: #2d2d2d; 
+            --color-input-bg: #3c3c3c; 
+            
+            /* Bayangan Glow untuk Dark Mode */
+            --shadow-dark: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 10px rgba(138, 180, 248, 0.1); 
+            --shadow-light: 0 8px 20px rgba(0, 0, 0, 0.1); 
+
+            --icon-fill: #e0e0e0;
+        }
+
+        /* ====================================== */
+        /* LOADING SCREEN UTAMA (PRE-LOAD) */
+        /* ====================================== */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--color-background);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999; 
+            transition: opacity 0.5s ease;
+        }
+
+        .loader-wrapper {
+            width: 80%;
+            max-width: 300px;
+            background-color: var(--color-input-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+        }
+
+        .loader-bar {
+            height: 10px;
+            width: 0%;
+            /* Gradient Warna Elegan */
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+            transition: width 0.3s ease-in-out; 
+        }
+
+        /* Teks Status Loading */
+        .loading-text {
+            color: var(--color-text);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        /* ====================================== */
+        /* VARIABEL TEMA TERANG (LIGHT MODE) */
+        /* ====================================== */
+        body.light-mode {
+            --color-text: #1e1e1e;
+            --color-background: #f0f0f0;
+            --color-card: #ffffff;
+            --color-input-bg: #f7f7f7;
+            --color-primary: #1a73e8; 
+            --color-secondary: #34a853; 
+            --color-error: #ea4335; 
+            
+            --shadow-dark: var(--shadow-light);
+            --icon-fill: #1e1e1e;
+        }
+
+        /* Mengganti Font ke 'Inter' */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: var(--color-text);
+            display: flex;
+            flex-direction: column; 
+            justify-content: center;
+            align-items: center; 
+            min-height: 100vh;
+            background-color: var(--color-background);
+            transition: background-color 0.4s, color 0.4s;
+            text-align: center; 
+        }
+
+        /* -------------------------------------- */
+        /* 2. TAMPILAN UTAMA & CARD */
+        /* -------------------------------------- */
+        .container {
+            max-width: 450px;
+            width: 90%;
+            background: var(--color-card);
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: var(--shadow-dark);
+            opacity: 1; 
+            transform: translateY(0);
+            transition: background-color 0.4s, box-shadow 0.4s; 
+            text-align: left; 
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            display: block;
+            margin: 0 auto 30px auto;
+            text-align: center;
+        }
+
+        /* -------------------------------------- */
+        /* 3. INPUT FILE MINIMALIS & PREVIEW */
+        /* -------------------------------------- */
+        .file-input-wrapper {
+            border: 2px dashed #555;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center; 
+            margin-bottom: 10px; 
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            background-color: var(--color-input-bg);
+            border-color: #555;
+        }
+        .file-input-wrapper:hover { 
+            border-color: var(--color-primary); 
+            background-color: #4a4a4a;
+        }
+        body.light-mode .file-input-wrapper:hover {
+             background-color: #e8e8e8;
+        }
+        .file-input-wrapper.drag-active { 
+             border-color: var(--color-primary); 
+             background-color: #4a4a4a;
+             box-shadow: 0 0 15px rgba(138, 180, 248, 0.7); 
+        }
+        body.light-mode .file-input-wrapper.drag-active {
+             background-color: #e8e8e8;
+             box-shadow: 0 0 15px rgba(26, 115, 232, 0.7); 
+        }
+        
+        #imageFile {
+            display: none;
+        }
+        .file-label {
+            margin: 0;
+            color: var(--color-text);
+            font-weight: 500;
+        }
+        
+        /* Preview Gambar */
+        #imagePreviewContainer {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px; 
+            background-color: var(--color-card);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--color-input-bg);
+        }
+        #imagePreview {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+
+        /* -------------------------------------- */
+        /* 4. TOMBOL BERSIH & INTERAKTIF */
+        /* -------------------------------------- */
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s, box-shadow 0.3s; 
+            font-size: 0.95rem;
+            color: var(--color-background); 
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-upload {
+            background-color: var(--color-primary);
+            color: var(--color-background);
+            flex-grow: 1;
+        }
+        .btn-upload:hover {
+            background-color: #6a9ce7;
+            box-shadow: 0 4px 15px rgba(138, 180, 248, 0.5), 0 0 15px rgba(138, 180, 248, 0.3); 
+        }
+        body.light-mode .btn-upload:hover {
+             background-color: #4c8bf5;
+             box-shadow: 0 4px 15px rgba(26, 115, 232, 0.5), 0 0 15px rgba(26, 115, 232, 0.3); 
+        }
+        
+        .btn-reset {
+             background-color: #777;
+             color: var(--color-background);
+             flex-shrink: 0;
+             width: auto;
+        }
+        .btn-reset:hover {
+            background-color: #999;
+             box-shadow: 0 4px 15px rgba(119, 119, 119, 0.5); 
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); 
+        }
+
+        #copyButton {
+            background-color: var(--color-secondary);
+            color: var(--color-background);
+            padding: 12px 15px;
+            flex-shrink: 0;
+            width: auto;
+        }
+        #copyButton:hover {
+            background-color: #59b476;
+            box-shadow: 0 4px 15px rgba(105, 212, 139, 0.5), 0 0 15px rgba(105, 212, 139, 0.3); 
+        }
+        body.light-mode #copyButton:hover {
+             background-color: #54b170;
+             box-shadow: 0 4px 15px rgba(52, 168, 83, 0.5), 0 0 15px rgba(52, 168, 83, 0.3); 
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* -------------------------------------- */
+        /* 5. AREA STATUS & Ikon Status */
+        /* -------------------------------------- */
+        #result {
+            padding: 10px; 
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            min-height: 40px;
+            font-weight: 600;
+            border: 1px solid;
+            text-align: left; 
+        }
+        
+        .status-box {
+            background-color: #404040;
+            border-color: #606060;
+            color: var(--color-text);
+        }
+        .loading {
+            background-color: #4a4a35; 
+            border-color: #a0a040;
+            color: #ffc107;
+            display: block; 
+            height: auto;
+            padding: 10px;
+        }
+        .success {
+            background-color: #384e3c;
+            border-color: #4d7a55;
+            color: var(--color-secondary);
+            display: flex; 
+            align-items: center;
+            padding: 12px 15px;
+        }
+        .success::before {
+            content: '✅ ';
+        }
+        .error {
+            background-color: #553a3a;
+            border-color: #7a4d4d;
+            color: var(--color-error);
+            display: flex; 
+            align-items: center;
+            padding: 12px 15px;
+        }
+        .error::before {
+            content: '❌ ';
+        }
+        
+        /* Light Mode Status Styles */
+        body.light-mode .status-box {
+            background-color: #e0e0e0;
+            border-color: #c0c0c0;
+            color: #1e1e1e;
+        }
+        body.light-mode .loading {
+             background-color: #fff9c4; 
+             border-color: #ffc107;
+             color: #ffc107;
+        }
+        body.light-mode .success {
+             background-color: #e6f4ea;
+             border-color: #34a853;
+             color: var(--color-secondary);
+        }
+        body.light-mode .error {
+             background-color: #fce8e6;
+             border-color: #ea4335;
+             color: var(--color-error);
+        }
+        
+        /* -------------------------------------- */
+        /* PROGRESS BAR DI DALAM KOTAK STATUS */
+        /* -------------------------------------- */
+        .loading-content {
+            position: relative;
+            width: 100%;
+            height: 20px; 
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0; 
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+            border-radius: 6px;
+            opacity: 0.3;
+            transition: width 0.1s linear; 
+        }
+        .progress-text {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            height: 100%;
+            line-height: 20px;
+            font-size: 0.9rem;
+        }
+        .progress-text span {
+            font-weight: 700;
+        }
+        
+        /* -------------------------------------- */
+        /* 6. OUTPUT LINK DAN FOOTER */
+        /* -------------------------------------- */
+        
+        /* Output Link */
+        #linkOutput {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--color-input-bg);
+            border-radius: 10px;
+            border: 1px solid #4a4a4a;
+        }
+        #linkOutput p {
+            margin: 0 0 10px 0;
+            font-weight: 600;
+            color: var(--color-primary);
+            font-size: 0.9rem;
+        }
+        #linkOutput a {
+            display: block;
+            word-break: break-all;
+            /* WARNA LINK DIUBAH MENJADI WARNA TEKS TEMA (PUTIH DI DARK MODE) */
+            color: var(--color-text); 
+            text-decoration: none;
+            font-size: 0.85rem;
+            padding: 8px;
+            background-color: #2d2d2d;
+            border-radius: 6px;
+            border: 1px solid #4a4a4a;
+            margin-bottom: 10px;
+        }
+        body.light-mode #linkOutput a {
+            background-color: #e8e8e8;
+            border-color: #ccc;
+        }
+
+        .footer-copyright {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #777; 
+            text-align: center;
+        }
+        
+        .theme-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            padding: 5px;
+            border-radius: 50%;
+            background-color: var(--color-card);
+            box-shadow: var(--shadow-dark);
+            transition: background-color 0.4s, box-shadow 0.4s;
+        }
+        .theme-toggle svg {
+            width: 100%;
+            height: 100%;
+            fill: var(--icon-fill);
+            transition: fill 0.4s;
+        }
+        
+    </style>
+</head>
+<body style="overflow: hidden;"> 
+
+    <div id="loadingScreen">
+        <h2 class="loading-text">Memuat Sumber Daya...</h2>
+        <div class="loader-wrapper">
+            <div id="loaderBar" class="loader-bar"></div> 
+        </div>
+    </div>
+    <div class="theme-toggle" onclick="toggleTheme()">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2a10 10 0 1 0 10 10c0-5.523-4.477-10-10-10zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zM13 3.425A8.005 8.005 0 0 0 12 4a8 8 0 1 0 8 8c0-.62-.058-1.22-.164-1.802A8.005 8.005 0 0 0 13 3.425z"/>
+        </svg>
+    </div>
+
+    <div class="container" id="mainContent" style="opacity: 0;">
+        <h1>Uploader Foto ke URL</h1>
+        
+        <script>
+            // Ganti nilai ini dengan API Key ImgBB Anda yang sebenarnya
+            const IMGBB_API_KEY = "F37a46d629b56f902a64c206aad9bb6d"; 
+        </script>
+
+        <div id="imagePreviewContainer" style="display:none;">
+            <img id="imagePreview" alt="Pratinjau Gambar">
+        </div>
+
+        <div class="file-input-wrapper" onclick="document.getElementById('imageFile').click()">
+            <input type="file" id="imageFile" accept="image/*">
+            <p class="file-label">
+                <span id="fileNameDisplay">Klik Untuk Masukan Foto</span>
+            </p>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn btn-upload" onclick="uploadImage()">
+                Ubah
+            </button>
+             <button class="btn btn-reset" onclick="resetApp()">
+                Reset
+            </button>
+        </div>
+
+        <div id="result" class="status-box">
+            Status: Menunggu foto masukan.
+        </div>
+
+        <div id="linkOutput" style="display:none;">
+            <p>URL Foto:</p>
+            <a id="uploadedLink" href="#" target="_blank"></a>
+            <div class="button-group" style="margin-top: 10px; margin-bottom: 0;">
+                <button id="copyButton" class="btn" onclick="copyToClipboard()">Salin URL</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer-copyright" style="opacity: 0;">
+        ©Yazz_2025
+    </div>
+
+    <script>
+        // --- LOGIKA PROGRESS BAR PRE-LOAD ---
+        function startPreLoader() {
+            const loaderBar = document.getElementById('loaderBar');
+            const loadingScreen = document.getElementById('loadingScreen');
+            const mainContent = document.getElementById('mainContent');
+            const footer = document.querySelector('.footer-copyright');
+            
+            let width = 0;
+            const duration = 2500; // 2.5 detik loading
+            const intervalTime = 50; 
+            const increment = 100 / (duration / intervalTime);
+
+            const preLoaderInterval = setInterval(() => {
+                width += increment;
+                if (width >= 100) {
+                    width = 100;
+                    clearInterval(preLoaderInterval);
+                    
+                    // Sembunyikan layar loading dengan transisi
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        document.body.style.overflow = 'auto'; // Kembalikan overflow
+                        mainContent.style.opacity = '1'; // Tampilkan konten utama
+                        footer.style.opacity = '1';
+                    }, 500); 
+                }
+                loaderBar.style.width = width + '%';
+            }, intervalTime);
+        }
+
+        // Jalankan loader saat DOM siap
+        document.addEventListener('DOMContentLoaded', startPreLoader);
+
+        
+        // --- LOGIKA TEMA TOGGLE ---
+        const themeIcon = document.getElementById('themeIcon');
+        
+        function setIcon(isLight) {
+            const sunIcon = '<path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0 2a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 4V2h1v2h-1zm0 16v2h1v-2h-1zM4 12H2v1h2v-1zm16 0h2v1h-2v-1zM5.636 5.636l-.707.707 1.414 1.414.707-.707-1.414-1.414zm12.728 12.728l-.707.707 1.414 1.414.707-.707-1.414-1.414zM5.636 18.364l-.707-.707 1.414-1.414.707.707-1.414 1.414zm12.728-12.728l-.707-.707 1.414-1.414.707.707-1.414 1.414z"/>';
+            const moonIcon = '<path d="M12 2a10 10 0 1 0 10 10c0-5.523-4.477-10-10-10zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zM13 3.425A8.005 8.005 0 0 0 12 4a8 8 0 1 0 8 8c0-.62-.058-1.22-.164-1.802A8.005 8.005 0 0 0 13 3.425z"/>';
+            
+            themeIcon.innerHTML = isLight ? sunIcon : moonIcon;
+        }
+
+        function toggleTheme() {
+            const isLight = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            setIcon(isLight);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                setIcon(true);
+            } else {
+                setIcon(false);
+            }
+        });
+
+
+        // --- LOGIKA UPLOADER & PROGRESS BAR DI KOTAK STATUS ---
+        const fileInput = document.getElementById('imageFile');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const resultDiv = document.getElementById('result');
+        const linkOutputDiv = document.getElementById('linkOutput');
+        
+        let progressInterval;
+
+        function resetApp() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            fileInput.value = '';
+            imagePreviewContainer.style.display = 'none';
+            imagePreview.src = '';
+            fileNameDisplay.textContent = `Klik Untuk Masukan Foto`;
+            resultDiv.className = 'status-box';
+            resultDiv.innerHTML = 'Status: Menunggu foto masukan.';
+            linkOutputDiv.style.display = 'none';
+        }
+
+        function updateProgress(percentage) {
+            const progressBar = document.getElementById('progressBar');
+            const percentDisplay = document.getElementById('percentDisplay');
+
+            if (progressBar && percentDisplay) {
+                const safePercentage = Math.min(100, Math.floor(percentage)); 
+                progressBar.style.width = safePercentage + '%';
+                percentDisplay.textContent = safePercentage + '%';
+            }
+        }
+
+        function simulateProgress() {
+            let progress = 0;
+            const maxSimulatedProgress = 99;
+            const duration = 1500; 
+            const intervalTime = 50; 
+            const increment = maxSimulatedProgress / (duration / intervalTime);
+
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+
+            progressInterval = setInterval(() => {
+                progress += increment;
+                if (progress >= maxSimulatedProgress) {
+                    progress = maxSimulatedProgress;
+                }
+                updateProgress(progress);
+            }, intervalTime);
+        }
+
+        
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                fileNameDisplay.textContent = file.name; 
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreviewContainer.style.display = 'flex';
+                };
+                reader.readAsDataURL(file);
+                resultDiv.className = 'status-box';
+                resultDiv.innerHTML = 'Status: File siap diunggah.';
+            } else {
+                resetApp();
+            }
+        });
+
+        // Event listener untuk Drag and Drop 
+        const dropArea = document.querySelector('.file-input-wrapper');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false); 
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('drag-active'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('drag-active'), false);
+        });
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            fileInput.files = files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+        
+        function uploadImage() {
+            const uploadedLink = document.getElementById('uploadedLink');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                resultDiv.className = 'status-box error';
+                resultDiv.innerHTML = 'Pilih file gambar terlebih dahulu!'; 
+                linkOutputDiv.style.display = 'none';
+                return;
+            }
+            
+            // Tampilkan Progress Bar di kotak status
+            resultDiv.className = 'status-box loading';
+            resultDiv.innerHTML = `
+                <div class="loading-content">
+                    <div id="progressBar" class="progress-bar"></div>
+                    <div class="progress-text">
+                        <span>Mengunggah dan memproses...</span>
+                        <span id="percentDisplay">0%</span>
+                    </div>
+                </div>
+            `;
+            linkOutputDiv.style.display = 'none';
+
+            // Mulai Simulasi Persentase
+            simulateProgress();
+
+            const IMGBB_API_KEY_LOCAL = IMGBB_API_KEY; 
+
+            const reader = new FileReader();
+            reader.onloadend = function() {
+                const base64Image = reader.result.split(',')[1];
+                
+                const formData = new FormData();
+                formData.append('image', base64Image);
+                
+                const uploadUrl = `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY_LOCAL}`;
+
+                fetch(uploadUrl, {
+                    method: 'POST',
+                    body: formData 
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // HENTIKAN SIMULASI
+                    if (progressInterval) {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                    }
+
+                    if (data.success) {
+                        const imageUrl = data.data.url;
+                        
+                        updateProgress(100); 
+                        resultDiv.className = 'status-box success';
+                        resultDiv.innerHTML = 'Berhasil! Foto telah diubah menjadi URL.'; 
+
+                        uploadedLink.textContent = imageUrl;
+                        uploadedLink.href = imageUrl;
+                        linkOutputDiv.style.display = 'block';
+
+                    } else {
+                        const errorMessage = data.error ? data.error.message : 'Kesalahan tak terduga pada API.';
+                        resultDiv.className = 'status-box error';
+                        resultDiv.innerHTML = `Gagal mengunggah. Pesan: ${errorMessage}`;
+                        linkOutputDiv.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    if (progressInterval) {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                    }
+                    console.error('Error saat melakukan fetch:', error);
+                    resultDiv.className = 'status-box error';
+                    resultDiv.innerHTML = `Terjadi kesalahan jaringan: ${error.message}. Cek koneksi Anda.`;
+                    linkOutputDiv.style.display = 'none';
+                });
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function copyToClipboard() {
+            const textToCopy = document.getElementById('uploadedLink').href;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    document.getElementById('copyButton').textContent = 'Tersalin!';
+                    setTimeout(() => {
+                        document.getElementById('copyButton').textContent = 'Salin URL';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Gagal menyalin:', err);
+                    alert('Gagal menyalin. Silakan salin URL secara manual.');
+                });
+            } else {
+                 alert('Browser tidak mendukung penyalinan otomatis. Silakan salin URL secara manual.');
+            }
+        }
+    </script>
+
+</body>
+</html>
